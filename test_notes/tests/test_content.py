@@ -7,6 +7,11 @@ from notes.models import Note
 
 User = get_user_model()
 
+SLUG = ('1996',)
+LIST_URL = reverse('notes:list')
+ADD_URL = reverse('notes:add')
+EDIT_URL = reverse('notes:edit', args=SLUG)
+
 
 class TestRoutes(TestCase):
 
@@ -24,13 +29,12 @@ class TestRoutes(TestCase):
             slug='1996',
             author=cls.author
         )
-        cls.SLUG = (cls.notes.slug,)
-        cls.LIST_URL = reverse('notes:list')
-        cls.ADD_URL = reverse('notes:add')
-        cls.EDIT_URL = reverse('notes:edit', args=cls.SLUG)
 
     def test_note_in_list_for_author(self):
-        response = self.author_client.get(self.LIST_URL)
+        """Отдельная заметка передаётся на страницу со списком заметок
+        в списке object_list в словаре context.
+        """
+        response = self.author_client.get(LIST_URL)
         object_list = response.context['object_list']
         note_object = Note.objects.get()
         self.assertEqual(object_list.count(), 1)
@@ -40,17 +44,23 @@ class TestRoutes(TestCase):
         self.assertEqual(note_object.author, self.notes.author)
 
     def test_note_not_in_list_for_another_user(self):
-        response = self.reader_client.get(self.LIST_URL)
+        """В список заметок одного пользователя
+        не попадают заметки другого пользователя.
+        """
+        response = self.reader_client.get(LIST_URL)
         object_list = response.context['object_list']
         self.assertEqual(object_list.count(), 0)
 
     def test_create_and_edit_note_page_contains_form(self):
+        """На страницы создания и редактирования
+        заметки передаются формы
+        """
         urls = (
-            self.ADD_URL,
-            self.EDIT_URL
+            ADD_URL,
+            EDIT_URL
         )
         for name in urls:
             with self.subTest(name=name):
-                response = self.author_client.get(self.ADD_URL)
+                response = self.author_client.get(ADD_URL)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context['form'], NoteForm)
