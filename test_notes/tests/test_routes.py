@@ -39,16 +39,16 @@ class TestRoutes(TestCase):
         )
 
         cls.urls = (
-            (HOME_URL, False),
-            (LIST_URL, False),
-            (ADD_URL, False),
-            (SUCCESS_URL, False),
-            (EDIT_URL, True),
-            (DELETE_URL, True),
-            (DETAIL_URL, True),
-            (LOGIN_URL, False),
-            (LOGOUT_URL, False),
-            (SIGNUP_URL, False),
+            (HOME_URL),
+            (LIST_URL),
+            (ADD_URL),
+            (SUCCESS_URL),
+            (EDIT_URL),
+            (DELETE_URL),
+            (DETAIL_URL),
+            (LOGIN_URL),
+            (LOGOUT_URL),
+            (SIGNUP_URL),
         )
 
     def test_availability_for_notes_author(self):
@@ -63,25 +63,36 @@ class TestRoutes(TestCase):
         удаления и детали доступны не автору,
         и проверка 404 на эти 3 урла.
         """
-        for url, objects in self.urls:
+        url_404 = (
+            (EDIT_URL),
+            (DELETE_URL),
+            (DETAIL_URL),
+        )
+        for url in self.urls:
             with self.subTest(url=url):
-                if objects is False:
-                    response = self.reader_client.get(url)
-                    self.assertEqual(response.status_code, HTTPStatus.OK)
-                else:
-                    response = self.reader_client.get(url)
+                response = self.reader_client.get(url)
+                if url in url_404:
                     self.assertEqual(response.status_code,
                                      HTTPStatus.NOT_FOUND)
+                else:
+                    self.assertEqual(response.status_code,
+                                     HTTPStatus.OK)
 
     def test_availability_for_notes_client(self):
         """Тест что все урлы кроме шести доступны анониму,
         а с тех шести - редирект на авторизацию
         """
+        url_not_redirect = (
+            (HOME_URL),
+            (LOGIN_URL),
+            (LOGOUT_URL),
+            (SIGNUP_URL),
+        )
         for url in self.urls:
             with self.subTest(url=url):
-                response = self.client.get(url[0])
-                if response.status_code == HTTPStatus.OK:
+                response = self.client.get(url)
+                if url in url_not_redirect:
                     self.assertEqual(response.status_code, HTTPStatus.OK)
                 else:
-                    redirect_url = f'{LOGIN_URL}?next={url[0]}'
+                    redirect_url = f'{LOGIN_URL}?next={url}'
                     self.assertRedirects(response, redirect_url)
